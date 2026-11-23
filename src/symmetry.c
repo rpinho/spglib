@@ -63,9 +63,10 @@ static void set_axes(int axes[3][3], int const a1, int const a2, int const a3);
 static PointSymmetry get_lattice_symmetry(Cell const *cell,
                                           double const symprec,
                                           double const angle_symprec);
-static int is_identity_metric(double const metric_rotated[3][3],
-                              double const metric_orig[3][3],
-                              double const symprec, double const angle_symprec);
+static int is_same_lattice_angles(double const metric_rotated[3][3],
+                                  double const metric_orig[3][3],
+                                  double const symprec,
+                                  double const angle_symprec);
 static double get_angle(double const metric[3][3], int const i, int const j);
 
 /* get_translation, search_translation_part and search_pure_translations */
@@ -916,7 +917,7 @@ static PointSymmetry get_lattice_symmetry(Cell const *cell,
     mat_get_metric(metric_orig, min_lattice);
 
     /* A column of the transformed lattice depends on only one relative axis.
-     * Apply the length test from is_identity_metric before enumerating triples.
+     * Check lengths here and angles after enumerating triples.
      * Use the same matrix operations to retain its floating-point arithmetic.
      */
     for (i = 0; i < 26; i++) {
@@ -982,8 +983,8 @@ static PointSymmetry get_lattice_symmetry(Cell const *cell,
                     mat_multiply_matrix_di3(lattice, min_lattice, axes);
                     mat_get_metric(metric, lattice);
 
-                    if (is_identity_metric(metric, metric_orig, symprec,
-                                           angle_tol)) {
+                    if (is_same_lattice_angles(metric, metric_orig, symprec,
+                                               angle_tol)) {
                         if ((aperiodic_axis == -1 && num_sym >= 48) ||
                             (aperiodic_axis != -1 && num_sym >= 24)) {
                             debug_print(
@@ -1020,10 +1021,10 @@ err:
     return lattice_sym;
 }
 
-static int is_identity_metric(double const metric_rotated[3][3],
-                              double const metric_orig[3][3],
-                              double const symprec,
-                              double const angle_symprec) {
+static int is_same_lattice_angles(double const metric_rotated[3][3],
+                                  double const metric_orig[3][3],
+                                  double const symprec,
+                                  double const angle_symprec) {
     int i, j, k;
     int elem_sets[3][2] = {{0, 1}, {0, 2}, {1, 2}};
     double cos1, cos2, x, length_ave2, sin_dtheta2;
@@ -1032,9 +1033,6 @@ static int is_identity_metric(double const metric_rotated[3][3],
     for (i = 0; i < 3; i++) {
         length_orig[i] = sqrt(metric_orig[i][i]);
         length_rot[i] = sqrt(metric_rotated[i][i]);
-        if (mat_Dabs(length_orig[i] - length_rot[i]) > symprec) {
-            goto fail;
-        }
     }
 
     for (i = 0; i < 3; i++) {

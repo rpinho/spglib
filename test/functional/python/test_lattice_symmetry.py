@@ -36,3 +36,15 @@ def test_lattice_symmetry_operation_sets(lengths, rotated, angle_tolerance):
     )
     assert {tuple(rotation.ravel()) for rotation in dataset.rotations} == expected
     np.testing.assert_allclose(dataset.translations, 0, atol=1e-12)
+
+
+@pytest.mark.parametrize("delta, number", [(0.9e-5, 123), (1.1e-5, 47)])
+@pytest.mark.parametrize("angle_tolerance", [-1.0, 0.001])
+def test_lattice_symmetry_length_tolerance(delta, number, angle_tolerance):
+    """Axis interchange requires equal lengths within symprec in both modes."""
+    dataset = get_symmetry_dataset(
+        (np.diag([2, 2 + delta, 4]), [[0, 0, 0]], [1]),
+        symprec=1e-5,
+        angle_tolerance=angle_tolerance,
+    )
+    assert dataset.number == number
